@@ -1,0 +1,68 @@
+// VoiceLink — PTT Inteligente con IA
+// Prisma schema (SQLite)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String
+  role        String   @default("operador") // operador | supervisor | administrador | guardia
+  plan        String   @default("basico") // basico | profesional | empresarial
+  status      String   @default("offline") // online | offline | busy
+  battery     Int      @default(100)
+  lat         Float?
+  lng         Float?
+  sector      String?
+  avatarColor String   @default("#4f6ef7")
+  lastSeen    DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  icon        String   @default("radio") // lucide icon name key
+  label       String   @default("general")
+  members     String   @default("[]") // JSON array of user ids
+  hasPassword Boolean  @default(false)
+  password    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  channelId  String
+  userId     String
+  userName   String
+  userRole   String   @default("operador")
+  type       String   @default("voice") // voice | text | alert
+  audioBase64 String?
+  transcript String   @default("")
+  intent     String?
+  actions    String?  // JSON array of detected actions
+  lat        Float?
+  lng        Float?
+  duration   Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model IntentLog {
+  id        String   @id @default(cuid())
+  messageId String?
+  transcript String
+  intent    String
+  actions   String   @default("[]") // JSON
+  executed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

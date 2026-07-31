@@ -1,0 +1,273 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* VoiceLink dark theme — matches original app (#0e0f14) */
+:root {
+  --radius: 0.75rem;
+  --background: #0e0f14;
+  --foreground: #e8eaf0;
+  --card: #161820;
+  --card-foreground: #e8eaf0;
+  --popover: #1e2028;
+  --popover-foreground: #e8eaf0;
+  --primary: #4f6ef7;
+  --primary-foreground: #ffffff;
+  --secondary: #1e2028;
+  --secondary-foreground: #e8eaf0;
+  --muted: #161820;
+  --muted-foreground: #8b8fa8;
+  --accent: #4f6ef7;
+  --accent-foreground: #ffffff;
+  --destructive: #f04a58;
+  --border: #252832;
+  --input: #252832;
+  --ring: #4f6ef7;
+  --chart-1: #4f6ef7;
+  --chart-2: #7c5cf7;
+  --chart-3: #22c97a;
+  --chart-4: #f5a623;
+  --chart-5: #f04a58;
+  --sidebar: #161820;
+  --sidebar-foreground: #e8eaf0;
+  --sidebar-primary: #4f6ef7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e2028;
+  --sidebar-accent-foreground: #e8eaf0;
+  --sidebar-border: #252832;
+  --sidebar-ring: #4f6ef7;
+
+  /* VoiceLink raw tokens (used by inline styles) */
+  --vl-bg: #0e0f14;
+  --vl-bg2: #161820;
+  --vl-bg3: #1e2028;
+  --vl-bg4: #252832;
+  --vl-accent: #4f6ef7;
+  --vl-accent2: #7c5cf7;
+  --vl-green: #22c97a;
+  --vl-red: #f04a58;
+  --vl-amber: #f5a623;
+  --vl-text: #e8eaf0;
+  --vl-text2: #8b8fa8;
+  --vl-text3: #4e5268;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground;
+    background-color: #0e0f14;
+    color: #e8eaf0;
+  }
+  body {
+    font-feature-settings: "ss01", "cv01";
+  }
+}
+
+/* Custom scrollbar (VoiceLink style) */
+.vl-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #252832 transparent;
+}
+.vl-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.vl-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.vl-scroll::-webkit-scrollbar-thumb {
+  background-color: #252832;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.vl-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #4e5268;
+  background-clip: content-box;
+}
+
+/* PTT pulse animation */
+@keyframes vl-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.ptt-pulse {
+  animation: vl-pulse 1.6s ease-out infinite;
+}
+
+/* Breathing logo animation (matches original SVG) */
+@keyframes vl-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.vl-breathe {
+  animation: vl-breathe 2.5s ease-in-out infinite;
+}
+
+/* Soft glow */
+@keyframes vl-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 110, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(79, 110, 247, 0);
+  }
+}
+.vl-glow {
+  animation: vl-glow 2s ease-in-out infinite;
+}
+
+/* Audio bars equalizer */
+@keyframes vl-bar {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.vl-eq-bar {
+  animation: vl-bar 0.9s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+/* Fade-in for messages */
+@keyframes vl-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.vl-fade-in {
+  animation: vl-fade-in 0.28s ease-out;
+}
+
+/* Map radar sweep */
+@keyframes vl-radar {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.vl-radar {
+  animation: vl-radar 4s linear infinite;
+  transform-origin: center;
+}
+
+/* Live dot */
+@keyframes vl-live-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.vl-live-dot {
+  animation: vl-live-dot 1.2s ease-in-out infinite;
+}
+
+/* Subtle gradient text */
+.vl-gradient-text {
+  background: linear-gradient(90deg, #4f6ef7, #7c5cf7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Range slider styling for waveform seek */
+input[type="range"].vl-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #252832;
+  border-radius: 4px;
+  outline: none;
+}
+input[type="range"].vl-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4f6ef7;
+  cursor: pointer;
+  border: 2px solid #0e0f14;
+}
+input[type="range"].vl-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4f6ef7;
+  cursor: pointer;
+  border: 2px solid #0e0f14;
+}
