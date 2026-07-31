@@ -8,38 +8,69 @@ interface LogoProps {
   className?: string
 }
 
-/** VoiceLink mark — rounded dark tile with the voice-wave glyph (breathing animation). */
+/**
+ * VoiceLink mark — circular blue→purple gradient tile with a white microphone
+ * glyph (matches the official VoiceLink app icon). Breathing glow animation
+ * gives it the "live" feel of a push-to-talk device.
+ */
 export function Logo({ size = 36, animated = true, className = "" }: LogoProps) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 30 30"
+      viewBox="0 0 64 64"
       className={className}
       aria-label="VoiceLink"
       role="img"
     >
-      <path
-        d="M24.51,28.51H5.49c-2.21,0-4-1.79-4-4V5.49c0-2.21,1.79-4,4-4h19.03c2.21,0,4,1.79,4,4v19.03
-    C28.51,26.72,26.72,28.51,24.51,28.51z"
-        fill="#0e0f14"
-        stroke="#4f6ef7"
-        strokeWidth={0.6317}
-        strokeMiterlimit={10}
+      <defs>
+        <linearGradient id="vl-logo-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#4F6EF7" />
+          <stop offset="100%" stopColor="#7B61FF" />
+        </linearGradient>
+        <filter id="vl-logo-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <clipPath id="vl-logo-clip">
+          <circle cx="32" cy="32" r="30" />
+        </clipPath>
+      </defs>
+
+      {/* Circular gradient background */}
+      <circle cx="32" cy="32" r="30" fill="url(#vl-logo-grad)" />
+      <circle
+        cx="32"
+        cy="32"
+        r="30"
+        fill="none"
+        stroke="#ffffff"
+        strokeOpacity="0.12"
+        strokeWidth="1"
       />
-      <g className={animated ? "vl-breathe" : ""}>
-        <path
-          d="M15.47,7.1l-1.3,1.85c-0.2,0.29-0.54,0.47-0.9,0.47h-7.1V7.09C6.16,7.1,15.47,7.1,15.47,7.1z"
-          fill="#4f6ef7"
-        />
-        <polygon
-          points="24.3,7.1 13.14,22.91 5.7,22.91 16.86,7.1"
-          fill="#4f6ef7"
-        />
-        <path
-          d="M14.53,22.91l1.31-1.86c0.2-0.29,0.54-0.47,0.9-0.47h7.09v2.33H14.53z"
-          fill="#4f6ef7"
-        />
+
+      {/* White microphone glyph with glow + optional breathing */}
+      <g
+        clipPath="url(#vl-logo-clip)"
+        filter="url(#vl-logo-glow)"
+        className={animated ? "vl-breathe" : ""}
+        stroke="#ffffff"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        strokeWidth="3.4"
+      >
+        {/* Head (pill capsule) */}
+        <rect x="25.5" y="15" width="13" height="22" rx="6.5" fill="#ffffff" stroke="none" />
+        {/* U-curve body */}
+        <path d="M 19 30 V 32 a 13 13 0 0 0 26 0 V 30" />
+        {/* Stem */}
+        <line x1="32" y1="45" x2="32" y2="52" />
+        {/* Base */}
+        <line x1="25" y1="52" x2="39" y2="52" />
       </g>
     </svg>
   )

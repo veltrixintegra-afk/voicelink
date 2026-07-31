@@ -31,7 +31,12 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "VoiceLink Team" }],
   icons: {
-    icon: "/voicelink-icon.svg",
+    icon: [
+      { url: "/voicelink-icon.svg", type: "image/svg+xml" },
+      { url: "/voicelink-icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: "/voicelink-icon.png",
   },
   openGraph: {
     title: "VoiceLink — PTT Inteligente con IA",
