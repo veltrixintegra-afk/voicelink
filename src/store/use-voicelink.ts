@@ -28,6 +28,7 @@ interface VLState {
   setActiveChannel: (id: string) => void
   setChannels: (c: VChannel[]) => void
   addChannel: (c: VChannel) => void
+  updateChannel: (id: string, patch: Partial<VChannel>) => void
   removeChannel: (id: string) => void
   setMessages: (m: VMessage[]) => void
   addMessage: (m: VMessage) => void
@@ -75,6 +76,12 @@ export const useVL = create<VLState>()(
       setActiveChannel: (id) => set({ activeChannelId: id }),
       setChannels: (c) => set({ channels: c }),
       addChannel: (c) => set((s) => ({ channels: [...s.channels, c] })),
+      updateChannel: (id, patch) =>
+        set((s) => ({
+          channels: s.channels.map((c) =>
+            c.id === id ? { ...c, ...patch } : c,
+          ),
+        })),
       removeChannel: (id) =>
         set((s) => ({
           channels: s.channels.filter((c) => c.id !== id),

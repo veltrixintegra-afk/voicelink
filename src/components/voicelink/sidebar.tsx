@@ -21,6 +21,7 @@ import type { ViewId } from "@/lib/types"
 import { Avatar } from "./shared"
 import { useState } from "react"
 import { CreateChannelDialog } from "./create-channel-dialog"
+import { ChannelActionsMenu } from "./channel-actions-menu"
 import { ChannelIconRender } from "./shared"
 
 const NAV: { id: ViewId; label: string; icon: typeof Radio; adminOnly?: boolean }[] = [
@@ -118,14 +119,9 @@ export function Sidebar({
             {channels.map((c) => {
               const active = c.id === activeChannelId
               return (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => {
-                    setActiveChannel(c.id)
-                    setView("channels")
-                    onClose()
-                  }}
-                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg transition-colors text-left"
+                  className="group flex items-center gap-1 px-2 py-0 rounded-lg transition-colors"
                   style={{
                     background: active ? `${VL_COLORS.accent}15` : "transparent",
                     borderLeft: active
@@ -133,27 +129,37 @@ export function Sidebar({
                       : "2px solid transparent",
                   }}
                 >
-                  <span
-                    className="w-6 h-6 rounded flex items-center justify-center shrink-0"
-                    style={{ background: `${c.color}18`, color: c.color }}
+                  <button
+                    onClick={() => {
+                      setActiveChannel(c.id)
+                      setView("channels")
+                      onClose()
+                    }}
+                    className="flex-1 min-w-0 flex items-center gap-2.5 py-2 text-left"
                   >
-                    <ChannelIconRender icon={c.icon} size={13} color={c.color} />
-                  </span>
-                  <span className="flex-1 min-w-0">
                     <span
-                      className="block text-xs font-semibold truncate"
-                      style={{ color: active ? VL_COLORS.text : VL_COLORS.text2 }}
+                      className="w-6 h-6 rounded flex items-center justify-center shrink-0"
+                      style={{ background: `${c.color}18`, color: c.color }}
                     >
-                      {c.name}
+                      <ChannelIconRender icon={c.icon} size={13} color={c.color} />
                     </span>
-                    <span
-                      className="block text-[10px] truncate"
-                      style={{ color: VL_COLORS.text3 }}
-                    >
-                      {c.members.length} miembros
+                    <span className="flex-1 min-w-0">
+                      <span
+                        className="block text-xs font-semibold truncate"
+                        style={{ color: active ? VL_COLORS.text : VL_COLORS.text2 }}
+                      >
+                        {c.name}
+                      </span>
+                      <span
+                        className="block text-[10px] truncate"
+                        style={{ color: VL_COLORS.text3 }}
+                      >
+                        {c.members.length} miembros
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </button>
+                  <ChannelActionsMenu channel={c} />
+                </div>
               )
             })}
           </div>

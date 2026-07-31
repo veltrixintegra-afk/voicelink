@@ -2,13 +2,24 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { MapPin, Navigation, BatteryFull, Crosshair, Loader2 } from "lucide-react"
+import {
+  MapPin,
+  Navigation,
+  BatteryFull,
+  Crosshair,
+  Loader2,
+  Plus,
+  Minus,
+  Maximize,
+  Move,
+} from "lucide-react"
 import { VL_COLORS } from "@/lib/constants"
 import { useVL } from "@/store/use-voicelink"
 import { Avatar, RoleBadge } from "../shared"
 import { apiFetch } from "@/lib/api"
 import type { VUser } from "@/lib/types"
 import { toast } from "sonner"
+import { usePanZoom } from "../use-pan-zoom"
 
 export function MapView() {
   const users = useVL((s) => s.users)
@@ -16,6 +27,8 @@ export function MapView() {
   const setUser = useVL((s) => s.setUser)
   const [locating, setLocating] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
+
+  const pz = usePanZoom({ x: 0, y: 0, scale: 1 })
 
   // Collect all points (team + current user)
   const points = users.filter((u) => typeof u.lat === "number" && typeof u.lng === "number")
@@ -93,12 +106,31 @@ export function MapView() {
 
   const selectedUser = selected ? users.find((u) => u.id === selected) || user : null
 
+  // Recenter on a user (selected from the team list)
+  function focusUser(u: VUser) {
+    if (typeof u.lat !== "number" || typeof u.lng !== "number") return
+    const { x, y } = project(u.lat, u.lng)
+    pz.focus(x, y, 2.2)
+  }
+
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)]">
       {/* Map */}
-      <div className="relative flex-1 min-h-[360px] overflow-hidden" style={{ background: VL_COLORS.bg2 }}>
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-          {/* Grid */}
+      <div
+        className="relative flex-1 min-h-[360px] overflow-hidden select-none"
+        style={{ background: VL_COLORS.bg2, touchAction: "none" }}
+      >
+        <svg
+          ref={pz.svgRef}
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full h-full cursor-grab active:cursor-grabbing"
+          preserveAspectRatio="xMidYMid slice"
+          onPointerDown={pz.onPointerDown}
+          onPointerMove={pz.onPointerMove}
+          onPointerUp={pz.onPointerUp}
+          onPointerCancel={pz.onPointerUp}
+          onWheel={pz.onWheel}
+        >
           <defs>
             <pattern id="vl-grid" width="40" height="40" patternUnits="userSpaceOnUse">
               <path d="M 40 0 L 0 0 0 40" fill="none" stroke={VL_COLORS.bg4} strokeWidth="0.5" />
@@ -113,88 +145,98 @@ export function MapView() {
               <stop offset="100%" stopColor="#0e1f33" stopOpacity="0.3" />
             </linearGradient>
           </defs>
+
+          {/* Background (fixed, not panned) */}
           <rect width={W} height={H} fill={VL_COLORS.bg2} />
-          <rect width={W} height={H} fill="url(#vl-grid)" />
 
-          {/* Stylized "river" / avenue */}
-          <path
-            d={`M -20 ${H * 0.62} Q ${W * 0.3} ${H * 0.5} ${W * 0.55} ${H * 0.66} T ${W + 20} ${H * 0.7}`}
-            fill="none"
-            stroke="url(#vl-river)"
-            strokeWidth="46"
-            strokeLinecap="round"
-          />
-          {/* Avenues */}
-          <line x1={W * 0.5} y1="0" x2={W * 0.5} y2={H} stroke={VL_COLORS.bg4} strokeWidth="3" />
-          <line x1="0" y1={H * 0.35} x2={W} y2={H * 0.35} stroke={VL_COLORS.bg4} strokeWidth="3" />
+          {/* Pannable / zoomable content */}
+          <g transform={`translate(${pz.transform.x} ${pz.transform.y}) scale(${pz.transform.scale})`}>
+            <rect width={W} height={H} fill="url(#vl-grid)" />
 
-          {/* Sector labels */}
-          <text x={W * 0.18} y={H * 0.2} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Providencia</text>
-          <text x={W * 0.62} y={H * 0.22} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Las Condes</text>
-          <text x={W * 0.2} y={H * 0.78} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Maipú</text>
-          <text x={W * 0.7} y={H * 0.82} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Ñuñoa</text>
+            {/* Stylized "river" / avenue */}
+            <path
+              d={`M -20 ${H * 0.62} Q ${W * 0.3} ${H * 0.5} ${W * 0.55} ${H * 0.66} T ${W + 20} ${H * 0.7}`}
+              fill="none"
+              stroke="url(#vl-river)"
+              strokeWidth="46"
+              strokeLinecap="round"
+            />
+            {/* Avenues */}
+            <line x1={W * 0.5} y1="0" x2={W * 0.5} y2={H} stroke={VL_COLORS.bg4} strokeWidth="3" />
+            <line x1="0" y1={H * 0.35} x2={W} y2={H * 0.35} stroke={VL_COLORS.bg4} strokeWidth="3" />
 
-          {/* Radar around current user */}
-          {user?.lat && user?.lng && (
-            <g>
-              {(() => {
-                const { x, y } = project(user.lat, user.lng)
-                return (
-                  <>
-                    <circle cx={x} cy={y} r="120" fill="url(#vl-radar-grad)" />
-                    <g className="vl-radar" style={{ transformOrigin: `${x}px ${y}px` }}>
-                      <path d={`M ${x} ${y} L ${x + 120} ${y} A 120 120 0 0 1 ${x + 85} ${y + 85} Z`} fill={VL_COLORS.accent} opacity="0.18" />
-                    </g>
-                  </>
-                )
-              })()}
-            </g>
-          )}
+            {/* Sector labels */}
+            <text x={W * 0.18} y={H * 0.2} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Providencia</text>
+            <text x={W * 0.62} y={H * 0.22} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Las Condes</text>
+            <text x={W * 0.2} y={H * 0.78} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Maipú</text>
+            <text x={W * 0.7} y={H * 0.82} fill={VL_COLORS.text3} fontSize="13" fontFamily="DM Sans, sans-serif" opacity="0.7">Ñuñoa</text>
 
-          {/* Markers */}
-          {points.map((p) => {
-            const { x, y } = project(p.lat as number, p.lng as number)
-            const isMe = p.id === user?.id
-            const statusColor =
-              p.status === "online" ? VL_COLORS.green : p.status === "busy" ? VL_COLORS.amber : VL_COLORS.text3
-            return (
-              <g
-                key={p.id}
-                onClick={() => setSelected(isMe ? null : p.id)}
-                style={{ cursor: isMe ? "default" : "pointer" }}
-              >
-                <circle cx={x} cy={y} r={isMe ? 18 : 14} fill={p.avatarColor} opacity="0.18" />
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={isMe ? 11 : 9}
-                  fill={p.avatarColor}
-                  stroke={VL_COLORS.bg}
-                  strokeWidth="2.5"
-                />
-                <text
-                  x={x}
-                  y={y + 3.5}
-                  textAnchor="middle"
-                  fontSize={isMe ? "9" : "8"}
-                  fill="#fff"
-                  fontFamily="DM Sans, sans-serif"
-                  fontWeight="700"
-                >
-                  {p.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
-                </text>
-                <circle cx={x + (isMe ? 8 : 6)} cy={y + (isMe ? 8 : 6)} r="3.5" fill={statusColor} stroke={VL_COLORS.bg} strokeWidth="1.5" />
-                {selected === p.id && (
-                  <text x={x} y={y - 18} textAnchor="middle" fontSize="11" fill={VL_COLORS.text} fontFamily="DM Sans, sans-serif" fontWeight="600">
-                    {p.name}
-                  </text>
-                )}
+            {/* Radar around current user */}
+            {user?.lat && user?.lng && (
+              <g>
+                {(() => {
+                  const { x, y } = project(user.lat, user.lng)
+                  return (
+                    <>
+                      <circle cx={x} cy={y} r="120" fill="url(#vl-radar-grad)" />
+                      <g className="vl-radar" style={{ transformOrigin: `${x}px ${y}px` }}>
+                        <path d={`M ${x} ${y} L ${x + 120} ${y} A 120 120 0 0 1 ${x + 85} ${y + 85} Z`} fill={VL_COLORS.accent} opacity="0.18" />
+                      </g>
+                    </>
+                  )
+                })()}
               </g>
-            )
-          })}
+            )}
 
-          {/* Compass */}
-          <g transform={`translate(${W - 70} 70)`}>
+            {/* Markers */}
+            {points.map((p) => {
+              const { x, y } = project(p.lat as number, p.lng as number)
+              const isMe = p.id === user?.id
+              const statusColor =
+                p.status === "online" ? VL_COLORS.green : p.status === "busy" ? VL_COLORS.amber : VL_COLORS.text3
+              return (
+                <g
+                  key={p.id}
+                  onClick={() => {
+                    if (pz.didMove()) return
+                    setSelected(isMe ? null : p.id)
+                  }}
+                  style={{ cursor: isMe ? "default" : "pointer" }}
+                >
+                  <circle cx={x} cy={y} r={isMe ? 18 : 14} fill={p.avatarColor} opacity="0.18" />
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={isMe ? 11 : 9}
+                    fill={p.avatarColor}
+                    stroke={VL_COLORS.bg}
+                    strokeWidth="2.5"
+                  />
+                  <text
+                    x={x}
+                    y={y + 3.5}
+                    textAnchor="middle"
+                    fontSize={isMe ? "9" : "8"}
+                    fill="#fff"
+                    fontFamily="DM Sans, sans-serif"
+                    fontWeight="700"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {p.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                  </text>
+                  <circle cx={x + (isMe ? 8 : 6)} cy={y + (isMe ? 8 : 6)} r="3.5" fill={statusColor} stroke={VL_COLORS.bg} strokeWidth="1.5" />
+                  {selected === p.id && (
+                    <text x={x} y={y - 18} textAnchor="middle" fontSize="11" fill={VL_COLORS.text} fontFamily="DM Sans, sans-serif" fontWeight="600" style={{ pointerEvents: "none" }}>
+                      {p.name}
+                    </text>
+                  )}
+                </g>
+              )
+            })}
+          </g>
+
+          {/* Compass (fixed, top-right) */}
+          <g transform={`translate(${W - 60} 60)`} style={{ pointerEvents: "none" }}>
             <circle r="26" fill={VL_COLORS.bg3} stroke={VL_COLORS.text3} strokeWidth="0.5" opacity="0.9" />
             <text textAnchor="middle" y="-12" fontSize="10" fill={VL_COLORS.red} fontWeight="700" fontFamily="DM Sans, sans-serif">N</text>
             <text textAnchor="middle" y="20" fontSize="9" fill={VL_COLORS.text2} fontFamily="DM Sans, sans-serif">S</text>
@@ -208,6 +250,33 @@ export function MapView() {
           <span className="text-[11px] font-semibold" style={{ color: VL_COLORS.text2 }}>
             {points.length} unidades · Santiago
           </span>
+          <span className="text-[10px] hidden sm:flex items-center gap-1" style={{ color: VL_COLORS.text3 }}>
+            <Move size={10} /> Arrastra · pellizca · rueda
+          </span>
+        </div>
+
+        {/* Zoom controls */}
+        <div
+          className="absolute left-3 bottom-4 flex flex-col gap-1 rounded-xl p-1"
+          style={{ background: `${VL_COLORS.bg}cc`, border: `0.5px solid ${VL_COLORS.text3}22` }}
+        >
+          <ZoomBtn onClick={() => pz.zoomBy(1.25)} aria-label="Acercar">
+            <Plus size={15} />
+          </ZoomBtn>
+          <ZoomBtn onClick={() => pz.zoomBy(1 / 1.25)} aria-label="Alejar">
+            <Minus size={15} />
+          </ZoomBtn>
+          <ZoomBtn onClick={() => pz.reset()} aria-label="Restablecer vista">
+            <Maximize size={14} />
+          </ZoomBtn>
+        </div>
+
+        {/* Scale indicator */}
+        <div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-md text-[10px] font-mono"
+          style={{ background: `${VL_COLORS.bg}cc`, border: `0.5px solid ${VL_COLORS.text3}22`, color: VL_COLORS.text2 }}
+        >
+          {Math.round(pz.transform.scale * 100)}%
         </div>
 
         {/* Locate button */}
@@ -222,7 +291,7 @@ export function MapView() {
         </button>
 
         {points.length === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <MapPin size={32} style={{ color: VL_COLORS.text3 }} />
             <p className="text-sm mt-2" style={{ color: VL_COLORS.text2 }}>Cargando mapa…</p>
           </div>
@@ -253,7 +322,10 @@ export function MapView() {
             return (
               <motion.button
                 key={p.id}
-                onClick={() => setSelected(isMe ? null : p.id)}
+                onClick={() => {
+                  setSelected(isMe ? null : p.id)
+                  focusUser(p)
+                }}
                 whileHover={{ x: 2 }}
                 className="w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-colors"
                 style={{
@@ -294,5 +366,22 @@ export function MapView() {
         )}
       </div>
     </div>
+  )
+}
+
+function ZoomBtn({
+  children,
+  onClick,
+  ...rest
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors hover:bg-[var(--vl-bg4)]"
+      style={{ color: VL_COLORS.text2 }}
+      {...rest}
+    >
+      {children}
+    </button>
   )
 }

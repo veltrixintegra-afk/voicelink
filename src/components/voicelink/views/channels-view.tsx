@@ -38,17 +38,24 @@ export function ChannelsView() {
   }, [messages.length])
 
   const handleAudio = useCallback(
-    async (audioBase64: string, duration: number) => {
+    async (audioBase64: string, duration: number, liveTranscript: string) => {
       setLiveTranscript("")
       setTranscribing(true)
       setProcessing(true)
       try {
-        // 1) Transcribe via ASR (Whisper)
+        // 1) Transcribe via ASR (Whisper). The model auto-detects language,
+        // so Spanish audio → Spanish text. We keep the es-CL Web Speech
+        // live transcript as a robust Spanish fallback.
         const tr = await apiFetch<{ text: string; duration: number }>(
           "/api/transcribe",
           { method: "POST", json: { audio: audioBase64 } },
         )
-        const transcript = tr.text || ""
+        const asrText = (tr.text || "").trim()
+        // Prefer ASR; fall back to live es-CL transcript if ASR is empty/short.
+        const transcript =
+          asrText.length >= liveTranscript.length * 0.6 || !liveTranscript
+            ? asrText
+            : liveTranscript
 
         // 2) Detect intent via LLM
         let intent: IntentResponse | null = null
@@ -83,14 +90,14 @@ export function ChannelsView() {
       } catch (e) {
         console.error("[VoiceLink] PTT flow error:", e)
         toast.error("No se pudo procesar el mensaje de voz")
-        // Still store an untranscribed voice message so playback works
+        // Still store the voice message — use the live es-CL transcript if we have it.
         try {
           const res = await apiFetch<{ message: VMessage }>("/api/messages", {
             method: "POST",
             json: {
               channelId: activeChannelId,
               type: "voice",
-              transcript: "",
+              transcript: liveTranscript || "",
               audioBase64,
               duration,
               lat: user?.lat,

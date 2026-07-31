@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 interface UsePTTOptions {
-  onAudioReady: (base64: string, durationSec: number) => void
+  /** Receives the recorded audio + duration + the live es-CL transcript (if any). */
+  onAudioReady: (base64: string, durationSec: number, liveTranscript: string) => void
   onLiveTranscript?: (text: string) => void
   onStateChange?: (transmitting: boolean) => void
 }
@@ -28,6 +29,7 @@ export function usePTT({ onAudioReady, onLiveTranscript, onStateChange }: UsePTT
   const analyserRef = useRef<AnalyserNode | null>(null)
   const rafRef = useRef<number | null>(null)
   const optsRef = useRef(onAudioReady)
+  const liveTranscriptRef = useRef("")
   useEffect(() => {
     optsRef.current = onAudioReady
   }, [onAudioReady])
@@ -58,7 +60,9 @@ export function usePTT({ onAudioReady, onLiveTranscript, onStateChange }: UsePTT
           if (e.results[i].isFinal) full += t
           else interim += t
         }
-        onLiveTranscript?.((full + " " + interim).trim())
+        const combined = (full + " " + interim).trim()
+        liveTranscriptRef.current = combined
+        onLiveTranscript?.(combined)
       }
       rec.onerror = (e: any) => {
         console.warn("[VoiceLink] Web speech recognition error:", e.error)
@@ -128,19 +132,21 @@ export function usePTT({ onAudioReady, onLiveTranscript, onStateChange }: UsePTT
           type: mime || "audio/webm",
         })
         const reader = new FileReader()
+        const live = liveTranscriptRef.current
         reader.onloadend = () => {
           const dataUrl = reader.result as string
           const duration = Math.max(
             1,
             Math.round((Date.now() - startRef.current) / 1000),
           )
-          optsRef.current(dataUrl, duration)
+          optsRef.current(dataUrl, duration, live)
         }
         reader.readAsDataURL(blob)
       }
       mr.start()
       mediaRef.current = mr
       startRef.current = Date.now()
+      liveTranscriptRef.current = ""
       setTransmitting(true)
       onStateChange?.(true)
       startSpeech()
