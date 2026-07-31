@@ -305,7 +305,8 @@ export function AuthScreen() {
                 >
                   <CheckCircle2 size={14} style={{ color: VL_COLORS.green, marginTop: 1 }} />
                   <span>
-                    <b style={{ color: VL_COLORS.text }}>Cuenta demo:</b> demo@voicelink.app · voicelink
+                    <b style={{ color: VL_COLORS.text }}>Cuenta demo:</b> demo@voicelink.app · voicelink<br />
+                    <b style={{ color: VL_COLORS.accent2 }}>Admin:</b> veltrixintegra@gmail.com · voicelink
                   </span>
                 </div>
               </motion.div>

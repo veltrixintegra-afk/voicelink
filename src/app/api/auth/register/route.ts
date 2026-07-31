@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { ensureSeeded, hashPassword, makeToken, toVUser } from "@/lib/auth"
 import type { PlanId, VUser } from "@/lib/types"
-import { VL_COLORS } from "@/lib/constants"
+import { VL_COLORS, ADMIN_EMAIL } from "@/lib/constants"
 
 export async function POST(req: Request) {
   await ensureSeeded()
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   const name = String(body.name || "").trim()
   const email = String(body.email || "").trim().toLowerCase()
   const password = String(body.password || "")
-  const plan = (String(body.plan || "basico") as PlanId) || "basico"
+  const requestedPlan = (String(body.plan || "basico") as PlanId) || "basico"
 
   if (!name || !email || !password) {
     return NextResponse.json(
@@ -24,7 +24,13 @@ export async function POST(req: Request) {
       { status: 400 },
     )
   }
-  if (plan === "empresarial") {
+
+  // The authorized administrator email is always promoted to admin + empresarial.
+  const isAdminEmail = email === ADMIN_EMAIL
+  const role = isAdminEmail ? "administrador" : "operador"
+  const plan: PlanId = isAdminEmail ? "empresarial" : requestedPlan
+
+  if (plan === "empresarial" && !isAdminEmail) {
     return NextResponse.json(
       {
         error:
@@ -36,10 +42,27 @@ export async function POST(req: Request) {
 
   const existing = await db.user.findUnique({ where: { email } })
   if (existing) {
-    return NextResponse.json(
-      { error: "Ya existe una cuenta con este email" },
-      { status: 409 },
-    )
+    // If the account already exists (e.g. seeded admin), update the password
+    // to the one provided now (so the owner can set their own) and log in.
+    const token = makeToken(existing.id)
+    await db.user.update({
+      where: { id: existing.id },
+      data: {
+        password: hashPassword(password),
+        status: "online",
+        lastSeen: new Date(),
+        // Re-promote admin email just in case
+        ...(isAdminEmail ? { role: "administrador", plan: "empresarial" } : {}),
+      },
+    })
+    const vuser: VUser = toVUser({
+      ...existing,
+      password: hashPassword(password),
+      status: "online",
+      lastSeen: new Date(),
+      ...(isAdminEmail ? { role: "administrador", plan: "empresarial" } : {}),
+    })
+    return NextResponse.json({ user: vuser, token })
   }
 
   const colors = [VL_COLORS.accent, VL_COLORS.accent2, VL_COLORS.green, VL_COLORS.amber]
@@ -48,14 +71,14 @@ export async function POST(req: Request) {
       name,
       email,
       password: hashPassword(password),
-      role: "operador",
+      role,
       plan,
       status: "online",
       battery: 100,
       lat: -33.45,
       lng: -70.66,
       sector: "Centro",
-      avatarColor: colors[Math.floor(Math.random() * colors.length)],
+      avatarColor: isAdminEmail ? VL_COLORS.accent2 : colors[Math.floor(Math.random() * colors.length)],
     },
   })
 

@@ -1,6 +1,6 @@
 // VoiceLink — lightweight auth + seeding helpers (server-side)
 import { db } from "@/lib/db"
-import { CHANNEL_SEEDS, VL_COLORS, ROLES } from "@/lib/constants"
+import { CHANNEL_SEEDS, VL_COLORS, ROLES, ADMIN_EMAIL } from "@/lib/constants"
 import type { VChannel, VUser } from "@/lib/types"
 
 // Simple, non-cryptographic password hash (demo only — not for production).
@@ -130,6 +130,22 @@ export async function seedDatabase() {
         avatarColor: VL_COLORS.accent2,
       },
     })
+    // Authorized administrator account (preconfigured)
+    await db.user.create({
+      data: {
+        name: "Veltrix Integra",
+        email: ADMIN_EMAIL,
+        password: hashPassword("voicelink"),
+        role: "administrador",
+        plan: "empresarial",
+        status: "offline",
+        battery: 100,
+        lat: -33.45,
+        lng: -70.66,
+        sector: "HQ",
+        avatarColor: VL_COLORS.accent2,
+      },
+    })
     // Demo team
     for (let i = 0; i < DEMO_USERS.length; i++) {
       const d = DEMO_USERS[i]
@@ -150,11 +166,72 @@ export async function seedDatabase() {
       })
     }
   }
+
+  // Always make sure the authorized admin email has admin privileges,
+  // even if the account already existed (idempotent promotion).
+  await promoteAdminAccount()
+}
+
+/** Promote the authorized administrator email to administrador + empresarial. */
+export async function promoteAdminAccount() {
+  try {
+    const existing = await db.user.findUnique({ where: { email: ADMIN_EMAIL } })
+    if (!existing) return
+    if (existing.role !== "administrador" || existing.plan !== "empresarial") {
+      await db.user.update({
+        where: { email: ADMIN_EMAIL },
+        data: { role: "administrador", plan: "empresarial" },
+      })
+    }
+  } catch (e) {
+    console.error("[VoiceLink] promoteAdminAccount error:", e)
+  }
+}
+
+/**
+ * Ensure the authorized administrator account exists with admin privileges.
+ * Creates it with a default password if missing (fresh or existing DB).
+ * Does NOT overwrite the password if the account already exists.
+ */
+export async function ensureAdminAccount() {
+  try {
+    const existing = await db.user.findUnique({ where: { email: ADMIN_EMAIL } })
+    if (existing) {
+      // Promote if needed (keep password as-is)
+      if (existing.role !== "administrador" || existing.plan !== "empresarial") {
+        await db.user.update({
+          where: { email: ADMIN_EMAIL },
+          data: { role: "administrador", plan: "empresarial" },
+        })
+      }
+      return
+    }
+    // Create with a default password (the owner can change it by registering)
+    await db.user.create({
+      data: {
+        name: "Veltrix Integra",
+        email: ADMIN_EMAIL,
+        password: hashPassword("voicelink"),
+        role: "administrador",
+        plan: "empresarial",
+        status: "offline",
+        battery: 100,
+        lat: -33.45,
+        lng: -70.66,
+        sector: "HQ",
+        avatarColor: VL_COLORS.accent2,
+      },
+    })
+  } catch (e) {
+    console.error("[VoiceLink] ensureAdminAccount error:", e)
+  }
 }
 
 export async function ensureSeeded() {
   try {
     await seedDatabase()
+    // Always (re)ensure the authorized administrator account exists + is admin.
+    await ensureAdminAccount()
   } catch (e) {
     console.error("[VoiceLink] seed error:", e)
   }

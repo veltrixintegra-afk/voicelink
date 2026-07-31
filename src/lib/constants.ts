@@ -214,3 +214,7 @@ export const INTENT_PATTERNS: { pattern: RegExp; type: string; label: string; in
 
 export const TAGLINE = "Habla. Transcribe. Actúa."
 export const APP_NAME = "VoiceLink"
+
+// Authorized administrator email — always promoted to the "administrador"
+// role with the Empresarial plan, both at seed time and at registration time.
+export const ADMIN_EMAIL = "veltrixintegra@gmail.com"
