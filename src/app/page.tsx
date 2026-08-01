@@ -6,22 +6,27 @@ import { AppShell } from "@/components/voicelink/app-shell"
 import { useVL } from "@/store/use-voicelink"
 import { Logo } from "@/components/voicelink/logo"
 import { VL_COLORS } from "@/lib/constants"
+import { validateSession } from "@/lib/api"
 
 export default function Home() {
   const isLoggedIn = useVL((s) => s.isLoggedIn)
   const [booting, setBooting] = useState(true)
 
-  // Seed the demo database on first load
   useEffect(() => {
     let active = true
     async function boot() {
       try {
+        // 1) Seed the demo database on first load
         await fetch("/api/seed", { method: "POST" })
       } catch (e) {
         console.warn("[VoiceLink] seed failed:", e)
-      } finally {
-        if (active) setBooting(false)
       }
+      // 2) If the user thinks they're logged in, verify the token is still
+      //    valid. A stale/invalid token is cleared so the login screen shows.
+      if (useVL.getState().isLoggedIn) {
+        await validateSession()
+      }
+      if (active) setBooting(false)
     }
     boot()
     return () => {

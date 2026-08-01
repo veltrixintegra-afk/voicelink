@@ -39,6 +39,12 @@ export function AppShell() {
       if (usRes.me) setUser(usRes.me)
     } catch (e) {
       console.error("[VoiceLink] load error:", e)
+      // If the token is no longer valid, clear the session so the login
+      // screen reappears instead of leaving the user stuck.
+      const msg = e instanceof Error ? e.message : ""
+      if (msg.includes("No autenticado") || msg.includes("401")) {
+        useVL.getState().logout()
+      }
     }
   }, [setChannels, setUsers, setUser])
 
