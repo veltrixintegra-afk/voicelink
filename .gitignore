@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -52,3 +53,14 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Database (environment-specific; recreated on first run via prisma db:push)
+db/*.db
+db/*.db-journal
+
+# Uploaded reference files (APK, screenshots, extracted assets)
+/upload/
+/download/
+
+# Agent browser / temp
+/tmp/
