@@ -42,21 +42,22 @@ export function AuthScreen() {
     e.preventDefault()
     setLoading(true)
     try {
-      if (mode === "login") {
-        const res = await apiFetch<AuthResponse>("/api/auth/login", {
-          method: "POST",
-          json: { email, password },
-        })
-        login(res.user, res.token)
-        toast.success(`Bienvenido, ${res.user.name}`)
-      } else {
-        const res = await apiFetch<AuthResponse>("/api/auth/register", {
-          method: "POST",
-          json: { name, email, password, plan },
-        })
-        login(res.user, res.token)
-        toast.success("Cuenta creada correctamente")
-      }
+      const res = await apiFetch<AuthResponse>("/api/auth", {
+        method: "POST",
+        json: {
+          action: mode,
+          name,
+          email,
+          password,
+          plan,
+        },
+      })
+      login(res.user, res.token)
+      toast.success(
+        mode === "login"
+          ? `Bienvenido, ${res.user.name}`
+          : "Cuenta creada correctamente",
+      )
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al ingresar")
     } finally {
